@@ -34,7 +34,7 @@ services:
       - ./logs:/${LOGGER_FILE_DIRNAME}
 
   savedate_web:
-    image: docker.pkg.github.com/kodasdotio/savedate-web/savedate-web:latest
+    image: docker.pkg.github.com/kodasdotio/savedate-web/savedate-web
     restart: unless-stopped
     env_file: .env
     depends_on:
