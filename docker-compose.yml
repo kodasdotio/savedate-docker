@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  savedate_db:
+    image: mariadb:10.5
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
+      - MYSQL_DATABASE=${DB_DATABASE}
+      - MYSQL_USER=${DB_USERNAME}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+    networks:
+      backend:
+        aliases:
+          - database
+    volumes:
+      - ./data:/var/lib/mysql
+
+
+  savedate_server:
+    image: docker.pkg.github.com/kodasdotio/savedate-server/savedate-server:main
+    restart: unless-stopped
+    env_file: .env
+    depends_on: 
+      - savedate_db
+    networks:
+      backend:
+        aliases:
+          - server
+    ports:
+      - 3000:3000
+    volumes:
+      - ./logs:/${LOGGER_FILE_DIRNAME}
+
+  savedate_web:
+    image: docker.pkg.github.com/kodasdotio/savedate-web/savedate-web:latest
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      - savedate_server
+    ports:
+      - 8080:80
+  
+networks:
+  backend:
+    name: backend
+    driver: bridge
