@@ -1,4 +1,4 @@
-# Server/Backend for SaveDate.io
+# Full-Stack Docker-Deployment for SaveDate.io
 
 ## Summary
 
