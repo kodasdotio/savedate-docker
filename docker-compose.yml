@@ -33,15 +33,17 @@ services:
 
   savedate_api:
     image: docker.pkg.github.com/kodasdotio/savedate-server/savedate-server:${API_VERSION}
-    restart: unless-stoppedW
+    restart: unless-stopped
     depends_on:
       - savedate_db
       - savedate_redis
     networks:
+      traefik:
       backend:
         aliases:
           - server
-      traefik:
+    healthcheck:
+      disable: true 
     volumes:
       - type: bind
         source: ${SECURITY_JWT_PRIVATE_KEY_PATH}
@@ -58,11 +60,13 @@ services:
       - "traefik.enable=${TRAEFIK_ENABLED}"
       - "traefik.http.routers.savedate-${INSTANCE_NAME}-api.rule=Host(`${API_SUBDOMAIN}.${HOSTNAME}`)"
       - "traefik.http.routers.savedate-${INSTANCE_NAME}-api.tls.certresolver=${TRAEFIK_TLS_PROVER}"
+      #- "traefik.http.services.savedate-${INSTANCE_NAME}-api.loadbalancer.port=3000"
       - "traefik.http.routers.savedate-${INSTANCE_NAME}-api.entrypoints=websecure"
       - "traefik.docker.network=traefik"
     environment:
       - NODE_ENV=${ENVIRONMENT}
       - APP_HOSTNAME=${API_SUBDOMAIN}.${HOSTNAME}
+      # - APP_PORT=80
       # Set this to default in server
       - APP_TLS_ENABLED=true
       - APP_INSTANCE_NAME=${INSTANCE_NAME}-api
@@ -96,13 +100,16 @@ services:
     image: docker.pkg.github.com/kodasdotio/savedate-web/savedate-web:${FRONTEND_VERSION}
     restart: unless-stopped
     depends_on:
-      - savedate_server
+      - savedate_api
+    networks:
+      traefik:
     labels:
       - "traefik.enable=${TRAEFIK_ENABLED}"
       - "traefik.http.routers.savedate-${INSTANCE_NAME}-web.rule=Host(`${HOSTNAME}`)"
       - "traefik.http.routers.savedate-${INSTANCE_NAME}-web.tls.certresolver=${TRAEFIK_TLS_PROVER}"
       - "traefik.http.routers.savedate-${INSTANCE_NAME}-web.entrypoints=websecure"
       - "traefik.docker.network=traefik"
+      #- "traefik.http.services.savedate-${INSTANCE_NAME}-web.loadbalancer.port=4200"
 
 networks:
   backend:
