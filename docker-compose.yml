@@ -24,7 +24,7 @@ services:
     profile: ["debug"]
     restart: unless-stopped
     depends_on:
-      - db
+      - savedate_db
     ports:
       - 8080:8080
     labels:
