@@ -6,7 +6,7 @@ services:
     profiles: ["api"]
     restart: unless-stopped
     environment:
-      MSQL_RANDOM_ROOT_PASSWORD: true
+      MSQL_RANDOM_ROOT_PASSWORD: "true"
       MYSQL_DATABASE: ${DB_DATABASE}
       MYSQL_USER: ${DB_USERNAME}
       MYSQL_PASSWORD: ${DB_PASSWORD}
