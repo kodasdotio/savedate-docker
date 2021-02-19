@@ -1,14 +1,15 @@
-version: "3.8"
+version: "3.9"
 
 services:
   savedate_db:
     image: mariadb:10.5
+    profiles: ["api"]
     restart: unless-stopped
     environment:
-      - MYSQL_RANDOM_ROOT_PASSWORD=true
-      - MYSQL_DATABASE=${DB_DATABASE}
-      - MYSQL_USER=${DB_USERNAME}
-      - MYSQL_PASSWORD=${DB_PASSWORD}
+      MSQL_RANDOM_ROOT_PASSWORD: true
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
     networks:
       backend:
         aliases:
@@ -18,8 +19,28 @@ services:
         source: ${DATA_LOCATION}/mysql
         target: /var/lib/mysql
 
+  savedate_db_admin:
+    image: adminer:4
+    profile: ["debug"]
+    restart: unless-stopped
+    depends_on:
+      - db
+    ports:
+      - 8080:8080
+    labels:
+      - "traefik.enable=${TRAEFIK_ENABLED}"
+      - "traefik.http.routers.savedate-${INSTANCE_NAME}-db-admin.rule=Host(`${DB_SUBDOMAIN}.${HOSTNAME}`)"
+      - "traefik.http.routers.savedate-${INSTANCE_NAME}-db-admin.tls.certresolver=${TRAEFIK_TLS_PROVER}"
+      #- "traefik.http.services.savedate_db_admin.loadbalancer.port=8080"
+      - "traefik.http.routers.savedate-${INSTANCE_NAME}-db-admin.entrypoints=websecure"
+      - "traefik.docker.network=traefik"
+    networks:
+      backend:
+      traefik:
+      
   savedate_redis:
     image: redis:6.0-alpine
+    profile: ["api"]
     restart: unless-stopped
     networks:
       backend:
@@ -33,6 +54,7 @@ services:
 
   savedate_api:
     image: docker.pkg.github.com/kodasdotio/savedate-server/savedate-server:${API_VERSION}
+    profile: ["api"]
     restart: unless-stopped
     depends_on:
       - savedate_db
@@ -41,7 +63,7 @@ services:
       traefik:
       backend:
         aliases:
-          - server
+          - api
     healthcheck:
       disable: true 
     volumes:
@@ -60,32 +82,40 @@ services:
       - "traefik.enable=${TRAEFIK_ENABLED}"
       - "traefik.http.routers.savedate-${INSTANCE_NAME}-api.rule=Host(`${API_SUBDOMAIN}.${HOSTNAME}`)"
       - "traefik.http.routers.savedate-${INSTANCE_NAME}-api.tls.certresolver=${TRAEFIK_TLS_PROVER}"
-      #- "traefik.http.services.savedate-${INSTANCE_NAME}-api.loadbalancer.port=3000"
       - "traefik.http.routers.savedate-${INSTANCE_NAME}-api.entrypoints=websecure"
       - "traefik.docker.network=traefik"
     environment:
       - NODE_ENV=${ENVIRONMENT}
-      - APP_HOSTNAME=${API_SUBDOMAIN}.${HOSTNAME}
-      # - APP_PORT=80
+      - API_HOSTNAME=${API_SUBDOMAIN}.${HOSTNAME}
+      # - API_PORT=80
       # Set this to default in server
-      - APP_TLS_ENABLED=true
-      - APP_INSTANCE_NAME=${INSTANCE_NAME}-api
-      - APP_PREFIX=${API_PREFIX}
-      - APP_SWAGGER_ENABLED=${API_SERVE_SWAGGER}
-      - USER_EMAIL_CONFIRM=${API_REQUIRE_EMAIL_CONFIRMATION}
-      # Change to default in server
-      - UPLOAD_FILE_DIR=/srv/savedate/upload
-      - LOGGER_CONSOLE_LEVEL=${API_LOGLEVEL}
+      - API_TLS_ENABLED=true
+      - API_INSTANCE_NAME=${INSTANCE_NAME}-api
+      - API_PREFIX=${API_PREFIX}
+      - API_SWAGGER_ENABLED=${API_SERVE_SWAGGER}
       - APP_BEHIND_PROXY=${USE_PROXY}
+
+      - USER_EMAIL_CONFIRMATION_REQUIRED=${API_USER_EMAIL_CONFIRMATION_REQUIRED}
+      - USER_EMAIL_CONFIRMATION_LINK_EXPIRATION_MINUTES=${API_USER_EMAIL_CONFIRMATION_LINK_EXPIRATION_MINUTES}
+
+      # Change to default in server
+      - FILE_UPLOAD_DIRECTORY=/srv/savedate/upload
+      - FILE_MAX_IMAGE_UPLOAD_SIZE_MB=${API_FILE_MAX_IMAGE_UPLOAD_SIZE_MB}
+
+      - LOGGER_CONSOLE_LEVEL=${API_LOGLEVEL}
+      
       - TYPEORM_HOST=${DB_HOSTNAME}
       - TYPEORM_USERNAME=${DB_USERNAME}
       - TYPEORM_PASSWORD=${DB_PASSWORD}
       - TYPEORM_DATABASE=${DB_DATABASE}
       - TYPEORM_PORT=${DB_PORT}
+
       - REDIS_HOST=${REDIS_HOSTNAME}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - REDIS_PORT=${REDIS_PORT}
+
       - CACHE_DEFAULT_TTL=${REDIS_DEFAULT_TTL}
+
       - SMTP_HOST=${SMTP_HOSTNAME}
       - SMTP_USERNAME=${SMTP_USERNAME}
       - SMTP_PASSWORD=${SMTP_PASSWORD}
@@ -93,11 +123,20 @@ services:
       - SMTP_FROM_NAME=${SMTP_FROM_NAME}
       - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL}
       - SMTP_PORT=${SMTP_PORT}
+
       - OAUTH_GOOGLE_CLIENT_ID=${OAUTH_GOOGLE_CLIENT_ID}
       - OAUTH_GOOGLE_CLIENT_KEY=${OAUTH_GOOGLE_CLIENT_KEY}
 
+      - SECURITY_JWT_SECRET_OR_PASSPHRASE=${API_SECURITY_JWT_SECRET_OR_PASSPHRASE}
+      - SECURITY_JWT_EXPIRATION_MINUTES=${API_SECURITY_JWT_EXPIRATION_MINUTES}
+      - SECURITY_JWT_ALGORITHM=${API_SECURITY_JWT_ALGORITHM}
+
+      - SECURITY_CORS_HOSTNAME=${API_SECURITY_CORS_HOSTNAME}
+      - SECURITY_REQUEST_RATELIMIT_PER_15_MIN=${API_SECURITY_REQUEST_RATELIMIT_PER_15_MIN}
+
   savedate_web:
     image: docker.pkg.github.com/kodasdotio/savedate-web/savedate-web:${FRONTEND_VERSION}
+    profile: ["web"]
     restart: unless-stopped
     depends_on:
       - savedate_api
