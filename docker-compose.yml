@@ -68,11 +68,11 @@ services:
       disable: true 
     volumes:
       - type: bind
-        source: ${SECURITY_JWT_PRIVATE_KEY_PATH}
+        source: ${API_SECURITY_JWT_PRIVATE_KEY_PATH}
         target: /etc/savedate/security/certs/private.key
         read_only: true
       - type: bind
-        source: ${SECURITY_JWT_PUBLIC_KEY_PATH}
+        source: ${API_SECURITY_JWT_PUBLIC_KEY_PATH}
         target: /etc/savedate/security/certs/public.pem
         read_only: true
       - type: bind
@@ -124,8 +124,8 @@ services:
       - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL}
       - SMTP_PORT=${SMTP_PORT}
 
-      - OAUTH_GOOGLE_CLIENT_ID=${OAUTH_GOOGLE_CLIENT_ID}
-      - OAUTH_GOOGLE_CLIENT_KEY=${OAUTH_GOOGLE_CLIENT_KEY}
+      - OAUTH_GOOGLE_CLIENT_ID=${API_OAUTH_GOOGLE_CLIENT_ID}
+      - OAUTH_GOOGLE_CLIENT_KEY=${API_OAUTH_GOOGLE_CLIENT_KEY}
 
       - SECURITY_JWT_SECRET_OR_PASSPHRASE=${API_SECURITY_JWT_SECRET_OR_PASSPHRASE}
       - SECURITY_JWT_EXPIRATION_MINUTES=${API_SECURITY_JWT_EXPIRATION_MINUTES}
@@ -135,7 +135,7 @@ services:
       - SECURITY_REQUEST_RATELIMIT_PER_15_MIN=${API_SECURITY_REQUEST_RATELIMIT_PER_15_MIN}
 
   savedate_web:
-    image: docker.pkg.github.com/kodasdotio/savedate-web/savedate-web:${FRONTEND_VERSION}
+    image: docker.pkg.github.com/kodasdotio/savedate-web/savedate-web:${WEB_VERSION}
     profile: ["web"]
     restart: unless-stopped
     depends_on:
